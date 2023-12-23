@@ -31,9 +31,8 @@ services:
             - .env
 
     db:
-        image: mysql:8.1
-        env_file:
-            - .env
+        image: mysql:8.2
+        command: --default-authentication-plugin=mysql_native_password
         volumes:
             - db:/var/lib/mysql
         ports:
@@ -41,11 +40,16 @@ services:
         restart: unless-stopped
         networks:
             - default
+        env_file:
+            - .env
 
 networks:
     default:
 
 volumes:
     caddy_data:
+        driver: local
     caddy_config:
+        driver: local
     db:
+        driver: local

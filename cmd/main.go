@@ -6,12 +6,14 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"test-signer.stekels.lv/internal/services"
 	"time"
 )
 
 type application struct {
-	config config
-	logger *slog.Logger
+	config           config
+	logger           *slog.Logger
+	signatureService *services.SignatureService
 }
 
 type config struct {
@@ -51,8 +53,9 @@ func main() {
 	}(db)
 
 	app := &application{
-		config: cfg,
-		logger: logger,
+		config:           cfg,
+		logger:           logger,
+		signatureService: services.NewSignatureService(logger, db),
 	}
 	server := &http.Server{
 		Addr:         ":4000",

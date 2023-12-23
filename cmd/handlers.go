@@ -28,7 +28,9 @@ func (app *application) createSignatureHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, transport.NewCreateSignatureResponse("test_signature"))
+	signature, err := app.signatureService.Create(input)
+
+	err = app.writeJSON(w, http.StatusCreated, transport.NewCreateSignatureResponse(signature))
 }
 
 func (app *application) verifySignatureHandler(w http.ResponseWriter, r *http.Request) {
