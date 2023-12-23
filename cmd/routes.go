@@ -1,11 +1,17 @@
 package main
 
-import "net/http"
+import (
+	"github.com/julienschmidt/httprouter"
+	"net/http"
+)
 
-func (app *application) routes() *http.ServeMux {
-	router := http.NewServeMux()
+func (app *application) routes() http.Handler {
+	router := httprouter.New()
 
-	router.HandleFunc("/ping", app.pingHandler)
+	router.NotFound = http.HandlerFunc(app.notFoundResponse)
+	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
+
+	router.HandlerFunc(http.MethodGet, "/ping", app.pingHandler)
 
 	return router
 }
