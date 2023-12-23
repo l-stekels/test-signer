@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"test-signer.stekels.lv/internal/models"
 	"test-signer.stekels.lv/internal/transport"
 	"test-signer.stekels.lv/internal/validator"
 )
@@ -28,9 +29,27 @@ func (app *application) createSignatureHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	signature, err := app.signatureService.Create(input)
+	signatureModel := &models.Signature{
+		UserJWT: input.UserJWT,
+	}
+	for _, question := range input.Questions {
+		signatureModel.Questions = append(signatureModel.Questions, models.Question{
+			Body:   question.Body,
+			Answer: question.Answer,
+		})
+	}
+
+	signature, err := app.signatureService.Create(*signatureModel)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+
+		return
+	}
 
 	err = app.writeJSON(w, http.StatusCreated, transport.NewCreateSignatureResponse(signature))
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
 
 func (app *application) verifySignatureHandler(w http.ResponseWriter, r *http.Request) {

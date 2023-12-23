@@ -2,28 +2,52 @@ package services
 
 import (
 	"database/sql"
+	"encoding/json"
+	"errors"
+	"github.com/mitchellh/hashstructure/v2"
 	"log/slog"
-	"test-signer.stekels.lv/internal/transport"
+	"strconv"
+	"test-signer.stekels.lv/internal/database/repositories"
+	"test-signer.stekels.lv/internal/models"
 )
 
 type SignatureService struct {
-	logger *slog.Logger
-	db     *sql.DB
+	logger        *slog.Logger
+	signatureRepo repositories.SignatureRepository
 }
 
 func NewSignatureService(logger *slog.Logger, db *sql.DB) *SignatureService {
 	return &SignatureService{
-		logger: logger,
-		db:     db,
+		logger:        logger,
+		signatureRepo: repositories.NewMySQLSignatureRepository(db),
 	}
 }
 
-func (s *SignatureService) Create(input transport.CreateSignatureRequest) (string, error) {
-	// 1. create signature
-	// 2. create questions
-	// 3. create answers
+func (s *SignatureService) Create(model models.Signature) (string, error) {
+	// TODO: Create a lock here and unlock only after everything is OK
+	signature, err := createSignature(model)
+	if err != nil {
+		return "", err
+	}
+	questionsJson, err := json.Marshal(model.Questions)
+	err = s.signatureRepo.Insert(signature, model.UserJWT, string(questionsJson))
+	if errors.Is(err, repositories.ErrDuplicateSignature) {
+		s.logger.Info("same signature detected", "signature", signature)
 
-	// store all that in the dataabase
+		return signature, nil
+	}
+	if err != nil {
+		return "", err
+	}
 
-	return "test_signature", nil
+	return signature, nil
+}
+
+func createSignature(model models.Signature) (string, error) {
+	hash, err := hashstructure.Hash(model, hashstructure.FormatV2, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return strconv.FormatUint(hash, 10), nil
 }
