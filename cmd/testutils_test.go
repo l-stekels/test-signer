@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"test-signer.stekels.lv/internal/database/repositories"
+	"test-signer.stekels.lv/internal/models"
 	"test-signer.stekels.lv/internal/services"
 	"testing"
 )
@@ -73,20 +74,30 @@ func (ts *testServer) post(t *testing.T, urlPath string, payload any) (int, http
 }
 
 type MockSignatureRepository struct {
-	storage map[string]mockQuestions
-}
-type mockQuestions struct {
-	Signature     string
-	UserJWT       string
-	QuestionsJson string
+	storage map[string]models.Signature
 }
 
-func (m MockSignatureRepository) Insert(signature string, userJWT string, questionsJson string) error {
-	m.storage[signature] = mockQuestions{
-		signature,
-		userJWT,
-		questionsJson,
+func (m *MockSignatureRepository) Insert(signature string, userJWT string, questionsJson string) error {
+	var questions []models.Question
+	err := json.Unmarshal([]byte(questionsJson), &questions)
+	if err != nil {
+		return err
+	}
+
+	m.storage[signature] = models.Signature{
+		Signature: signature,
+		UserJWT:   userJWT,
+		Questions: questions,
 	}
 
 	return nil
+}
+
+func (m *MockSignatureRepository) GetBySignature(signature string) (*models.Signature, error) {
+	model, ok := m.storage[signature]
+	if !ok {
+		return nil, repositories.ErrRecordNotFound
+	}
+
+	return &model, nil
 }

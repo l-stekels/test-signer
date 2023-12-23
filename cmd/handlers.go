@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"test-signer.stekels.lv/internal/models"
+	"test-signer.stekels.lv/internal/services"
 	"test-signer.stekels.lv/internal/transport"
 	"test-signer.stekels.lv/internal/validator"
 )
@@ -24,7 +26,7 @@ func (app *application) createSignatureHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 	v := validator.New()
-	if v.Validate(input); !v.Valid() {
+	if v.ValidateCreateSignatureRequest(input); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
@@ -53,15 +55,45 @@ func (app *application) createSignatureHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (app *application) verifySignatureHandler(w http.ResponseWriter, r *http.Request) {
-	// so I need to read the request body first into a struct
-	// {
-	//	user_jwt: string,
-	//	data: [
-	//		{
-	//			question: string,
-	//			answer: string,
-	//		},
-	//		{}
-	//	]
-	//}
+	var input transport.VerifySignatureRequest
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	v := validator.New()
+	if v.ValidateVerifySignatureRequest(input); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	signatureModel, err := app.signatureService.Get(input.Signature)
+	if errors.Is(err, services.ErrSignatureNotFound) {
+		app.notFoundResponse(w, r)
+
+		return
+	}
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+
+		return
+	}
+	if input.UserJWT != signatureModel.UserJWT {
+		app.notFoundResponse(w, r)
+
+		return
+	}
+
+	var questions []transport.Question
+	for _, question := range signatureModel.Questions {
+		questions = append(questions, transport.Question{
+			Body:   question.Body,
+			Answer: question.Answer,
+		})
+	}
+
+	err = app.writeJSON(w, http.StatusOK, transport.NewVerifySignatureResponse(questions, signatureModel.CreatedAt))
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }

@@ -29,7 +29,7 @@ func (v *Validator) Check(ok bool, key, message string) {
 	}
 }
 
-func (v *Validator) Validate(input transport.CreateSignatureRequest) {
+func (v *Validator) ValidateCreateSignatureRequest(input transport.CreateSignatureRequest) {
 	if input.UserJWT == "" {
 		v.AddError("user_jwt", "must be provided")
 	}
@@ -46,5 +46,14 @@ func (v *Validator) Validate(input transport.CreateSignatureRequest) {
 		if question.Answer == "" {
 			v.AddError(fmt.Sprintf("question[%d]", index), "question answer must be provided")
 		}
+	}
+}
+
+func (v *Validator) ValidateVerifySignatureRequest(input transport.VerifySignatureRequest) {
+	if input.UserJWT == "" {
+		v.AddError("user_jwt", "must be provided")
+	}
+	if input.Signature == "" {
+		v.AddError("signature", "must be provided")
 	}
 }

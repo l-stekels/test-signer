@@ -10,6 +10,8 @@ import (
 	"test-signer.stekels.lv/internal/models"
 )
 
+var ErrSignatureNotFound = errors.New("signature not found")
+
 type SignatureService struct {
 	logger        *slog.Logger
 	signatureRepo repositories.SignatureRepository
@@ -40,6 +42,15 @@ func (s *SignatureService) Create(model models.Signature) (string, error) {
 	}
 
 	return signature, nil
+}
+
+func (s *SignatureService) Get(signature string) (models.Signature, error) {
+	model, err := s.signatureRepo.GetBySignature(signature)
+	if errors.Is(err, repositories.ErrRecordNotFound) {
+		return models.Signature{}, ErrSignatureNotFound
+	}
+
+	return *model, err
 }
 
 func createSignature(model models.Signature) (string, error) {

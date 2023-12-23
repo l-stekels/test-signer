@@ -13,6 +13,7 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/ping", app.pingHandler)
 	router.HandlerFunc(http.MethodPost, "/signature", app.createSignatureHandler)
+	router.HandlerFunc(http.MethodPost, "/signature/verify", app.verifySignatureHandler)
 
 	return router
 }

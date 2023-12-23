@@ -3,16 +3,20 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"github.com/go-sql-driver/mysql"
 	"strings"
+	"test-signer.stekels.lv/internal/models"
 	"time"
 )
 
 var ErrDuplicateSignature = errors.New("duplicate signature")
+var ErrRecordNotFound = errors.New("record not found")
 
 type SignatureRepository interface {
 	Insert(signature string, userJWT string, questions string) error
+	GetBySignature(signature string) (*models.Signature, error)
 }
 
 type MySQLSignatureRepository struct {
@@ -41,4 +45,32 @@ func (r *MySQLSignatureRepository) Insert(signature string, userJWT string, ques
 		return err
 	}
 	return nil
+}
+
+func (r *MySQLSignatureRepository) GetBySignature(signature string) (*models.Signature, error) {
+	query := `SELECT s.user_jwt, s.created_at, s.questions FROM signatures s WHERE signature = ?`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var signatureModel models.Signature
+	var questionsJson string
+	err := r.Conn.QueryRowContext(ctx, query, signature).Scan(
+		&signatureModel.UserJWT,
+		&signatureModel.CreatedAt,
+		&questionsJson,
+	)
+	var questions []models.Question
+	err = json.Unmarshal([]byte(questionsJson), &questions)
+	if err != nil {
+		return nil, err
+	}
+	signatureModel.Questions = questions
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return &signatureModel, nil
 }
