@@ -1,7 +1,6 @@
 package services
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"github.com/mitchellh/hashstructure/v2"
@@ -16,10 +15,10 @@ type SignatureService struct {
 	signatureRepo repositories.SignatureRepository
 }
 
-func NewSignatureService(logger *slog.Logger, db *sql.DB) *SignatureService {
+func NewSignatureService(logger *slog.Logger, signatureRepository repositories.SignatureRepository) *SignatureService {
 	return &SignatureService{
 		logger:        logger,
-		signatureRepo: repositories.NewMySQLSignatureRepository(db),
+		signatureRepo: signatureRepository,
 	}
 }
 

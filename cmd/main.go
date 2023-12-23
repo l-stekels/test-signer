@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"test-signer.stekels.lv/internal/database/repositories"
 	"test-signer.stekels.lv/internal/services"
 	"time"
 )
@@ -52,10 +53,11 @@ func main() {
 		}
 	}(db)
 
+	signatureRepo := repositories.NewMySQLSignatureRepository(db)
 	app := &application{
 		config:           cfg,
 		logger:           logger,
-		signatureService: services.NewSignatureService(logger, db),
+		signatureService: services.NewSignatureService(logger, signatureRepo),
 	}
 	server := &http.Server{
 		Addr:         ":4000",

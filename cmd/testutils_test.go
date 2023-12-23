@@ -7,14 +7,18 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"test-signer.stekels.lv/internal/database/repositories"
+	"test-signer.stekels.lv/internal/services"
 	"testing"
 )
 
-func newTestApplication(t *testing.T) *application {
+func newTestApplication(t *testing.T, signatureRepo repositories.SignatureRepository) *application {
 	t.Helper()
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	return &application{
-		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		logger:           logger,
+		signatureService: services.NewSignatureService(logger, signatureRepo),
 	}
 }
 
@@ -66,4 +70,23 @@ func (ts *testServer) post(t *testing.T, urlPath string, payload any) (int, http
 	body = bytes.TrimSpace(body)
 
 	return res.StatusCode, res.Header, string(body)
+}
+
+type MockSignatureRepository struct {
+	storage map[string]mockQuestions
+}
+type mockQuestions struct {
+	Signature     string
+	UserJWT       string
+	QuestionsJson string
+}
+
+func (m MockSignatureRepository) Insert(signature string, userJWT string, questionsJson string) error {
+	m.storage[signature] = mockQuestions{
+		signature,
+		userJWT,
+		questionsJson,
+	}
+
+	return nil
 }

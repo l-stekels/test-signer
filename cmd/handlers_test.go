@@ -7,7 +7,7 @@ import (
 )
 
 func TestPingGet(t *testing.T) {
-	app := newTestApplication(t)
+	app := newTestApplication(t, nil)
 
 	ts := newTestServer(t, app.routes())
 	defer ts.Close()
@@ -25,7 +25,7 @@ func TestPingGet(t *testing.T) {
 }
 
 func TestPingPost(t *testing.T) {
-	app := newTestApplication(t)
+	app := newTestApplication(t, nil)
 	ts := newTestServer(t, app.routes())
 	defer ts.Close()
 	payload := struct {
@@ -46,7 +46,7 @@ func TestPingPost(t *testing.T) {
 }
 
 func TestCreateSignatureErrors(t *testing.T) {
-	app := newTestApplication(t)
+	app := newTestApplication(t, nil)
 	ts := newTestServer(t, app.routes())
 	defer ts.Close()
 
@@ -126,7 +126,7 @@ func TestCreateSignatureErrors(t *testing.T) {
 }
 
 func TestCreateSignature(t *testing.T) {
-	app := newTestApplication(t)
+	app := newTestApplication(t, MockSignatureRepository{make(map[string]mockQuestions)})
 	ts := newTestServer(t, app.routes())
 	defer ts.Close()
 
@@ -152,7 +152,7 @@ func TestCreateSignature(t *testing.T) {
 	if code != http.StatusCreated {
 		t.Errorf("want %d; got %d", http.StatusCreated, code)
 	}
-	expectedBody := `{"data":{"signature":"test_signature"}}`
+	expectedBody := `{"data":{"signature":"14575973885829822288"}}`
 	if body != expectedBody {
 		t.Errorf("want body to equal %q, got %q", expectedBody, body)
 	}
