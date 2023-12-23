@@ -14,4 +14,4 @@
 
 ## Decisions
 
-1. In order to implement proper lock mechanism Redis is added as a dependency to the project.
+* In order to implement proper lock mechanism Redis is added as a dependency to the project.
