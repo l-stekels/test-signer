@@ -1,0 +1,51 @@
+name: test_signer
+services:
+    api:
+        build:
+            context: docker/dev
+            dockerfile: Dockerfile
+            target: dev
+        volumes:
+            - ./:/app
+        networks:
+            - default
+        environment:
+            MYSQL_HOST: db
+        env_file:
+            - .env
+
+    caddy:
+        image: caddy:latest
+        restart: unless-stopped
+        ports:
+            - "80:80"
+            - "443:443"
+            - "2019:2019"
+        volumes:
+            - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
+            - caddy_config:/config
+        networks:
+            - default
+        env_file:
+            - .env
+
+    db:
+        image: mysql:8.1
+        env_file:
+            - .env
+        volumes:
+            - db:/var/lib/mysql
+        ports:
+            - "3306:3306"
+        restart: unless-stopped
+        networks:
+            - default
+
+networks:
+    default:
+
+volumes:
+    caddy_data:
+    caddy_config:
+    db:

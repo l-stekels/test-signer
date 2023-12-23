@@ -1,0 +1,16 @@
+{
+    email lauris@stekels.lv
+    servers {
+        listener_wrappers {
+            http_redirect
+            tls
+        }
+    }
+}
+https://localhost {
+    encode zstd gzip
+
+    handle {
+        reverse_proxy api:4000
+    }
+}
