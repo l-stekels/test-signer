@@ -2,7 +2,7 @@ name: test_signer
 services:
     api:
         build:
-            context: docker/dev
+            context: build/dev
             dockerfile: Dockerfile
             target: dev
         volumes:
@@ -22,7 +22,7 @@ services:
             - "443:443"
             - "2019:2019"
         volumes:
-            - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile
+            - ./build/caddy/Caddyfile:/etc/caddy/Caddyfile
             - caddy_data:/data
             - caddy_config:/config
         networks:

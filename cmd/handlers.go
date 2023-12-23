@@ -1,20 +1,10 @@
 package main
 
-import "net/http"
-
-type CreateSignatureRequest struct {
-	UserJWT string     `json:"user_jwt"`
-	Data    []Question `json:"data"`
-}
-
-type Question struct {
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
-}
-
-type CreateSignatureResponse struct {
-	Signature string `json:"test_signature"`
-}
+import (
+	"net/http"
+	"test-signer.stekels.lv/internal/transport"
+	"test-signer.stekels.lv/internal/validator"
+)
 
 func (app *application) pingHandler(w http.ResponseWriter, r *http.Request) {
 	err := app.writeJSON(w, http.StatusOK, envelope{
@@ -26,17 +16,19 @@ func (app *application) pingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) createSignatureHandler(w http.ResponseWriter, r *http.Request) {
-	// so I need to read the request body first into a struct
-	// {
-	//	user_jwt: string,
-	//	data: [
-	//		{
-	//			question: string,
-	//			answer: string,
-	//		},
-	//		{}
-	//	]
-	//}
+	var input transport.CreateSignatureRequest
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	v := validator.New()
+	if v.Validate(input); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusCreated, transport.NewCreateSignatureResponse("test_signature"))
 }
 
 func (app *application) verifySignatureHandler(w http.ResponseWriter, r *http.Request) {

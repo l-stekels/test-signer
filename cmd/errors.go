@@ -10,6 +10,7 @@ func (app *application) logError(err error) {
 }
 
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, errors map[string]string) {
+	app.logger.Error("error response sent", "status", status, "errors", errors)
 	envelope := envelope{"error": errors}
 	err := app.writeJSON(w, status, envelope)
 	if err != nil {
@@ -31,4 +32,12 @@ func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request)
 func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
 	message := fmt.Sprintf("the %s method is not supported for this resource", r.Method)
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, map[string]string{"method_not_allowed": message})
+}
+
+func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.errorResponse(w, r, http.StatusBadRequest, map[string]string{"bad_request": err.Error()})
+}
+
+func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
+	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }

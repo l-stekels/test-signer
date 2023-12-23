@@ -12,6 +12,7 @@ func (app *application) routes() http.Handler {
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
 	router.HandlerFunc(http.MethodGet, "/ping", app.pingHandler)
+	router.HandlerFunc(http.MethodPost, "/signature", app.createSignatureHandler)
 
 	return router
 }
