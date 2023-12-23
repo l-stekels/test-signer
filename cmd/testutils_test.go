@@ -19,7 +19,7 @@ func newTestApplication(t *testing.T, signatureRepo repositories.SignatureReposi
 
 	return &application{
 		logger:           logger,
-		signatureService: services.NewSignatureService(logger, signatureRepo),
+		signatureService: services.NewSignatureService(logger, signatureRepo, &MockLocker{}),
 	}
 }
 
@@ -100,4 +100,13 @@ func (m *MockSignatureRepository) GetBySignature(signature string) (*models.Sign
 	}
 
 	return &model, nil
+}
+
+type MockLocker struct{}
+
+func (m *MockLocker) GetLock(key string) error {
+	return nil
+}
+func (m *MockLocker) ReleaseLock(key string) error {
+	return nil
 }

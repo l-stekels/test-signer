@@ -2,7 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"github.com/bsm/redislock"
 	"github.com/go-sql-driver/mysql"
+	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"net/http"
 	"os"
@@ -18,8 +21,9 @@ type application struct {
 }
 
 type config struct {
-	env string
-	db  dbConfig
+	env         string
+	db          dbConfig
+	redisConfig redisConfig
 }
 
 type dbConfig struct {
@@ -27,6 +31,10 @@ type dbConfig struct {
 	password string
 	database string
 	host     string
+}
+type redisConfig struct {
+	host string
+	port string
 }
 
 func main() {
@@ -38,8 +46,25 @@ func main() {
 			database: os.Getenv("MYSQL_DATABASE"),
 			host:     os.Getenv("MYSQL_HOST"),
 		},
+		redisConfig: redisConfig{
+			host: os.Getenv("REDIS_HOST"),
+			port: os.Getenv("REDIS_PORT"),
+		},
 	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	client := redis.NewClient(&redis.Options{
+		Network: "tcp",
+		Addr:    fmt.Sprintf("%s:%s", cfg.redisConfig.host, cfg.redisConfig.port),
+	})
+	defer func(client *redis.Client) {
+		err := client.Close()
+		if err != nil {
+			logger.Error(err.Error())
+			os.Exit(1)
+		}
+	}(client)
+	locker := redislock.New(client)
 
 	db, err := openDB(cfg)
 	if err != nil {
@@ -54,10 +79,11 @@ func main() {
 	}(db)
 
 	signatureRepo := repositories.NewMySQLSignatureRepository(db)
+	redisLocker := services.NewRedisLocker(locker)
 	app := &application{
 		config:           cfg,
 		logger:           logger,
-		signatureService: services.NewSignatureService(logger, signatureRepo),
+		signatureService: services.NewSignatureService(logger, signatureRepo, redisLocker),
 	}
 	server := &http.Server{
 		Addr:         ":4000",
